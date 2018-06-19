@@ -1,6 +1,7 @@
 #!/bin/python3
 from PIL import Image
 from math import ceil,sqrt
+from hashlib import sha256
 import binascii
 import argparse
 
@@ -27,18 +28,11 @@ def tuple2hex(pixel):
 	hex_rgb=[('0'*(2-len(i)))+i for i in hex_rgb]
 	return ''.join(hex_rgb)
 	
-def get_offset(offset_tuple):
-	offset = tuple2hex(offset_tuple)
-	for j in range(6):
-		if(offset[j]=='0'):
-			j=j+1
-		else:
-			break
-	return offset[j:]
-
 def encode(src_fp,dest_fp):
 	print("Reading from file...")
-	hex_str=pad_hex(binascii.hexlify(src_fp.read()).decode('utf-8'))
+	file_data=src_fp.read()
+	sha256_hash=sha256(file_data).hexdigest()
+	hex_str=pad_hex(sha256_hash+binascii.hexlify(file_data).decode('utf-8'))
 	hex_colors=pad_image([hex2tuple(hex_str[i:i+6]) for i in range(0,len(hex_str),6)])
 	length=int(sqrt(len(hex_colors)))
 	src_fp.close()
@@ -62,10 +56,19 @@ def decode(src_fp,dest_fp):
 	color_list=list(img.getdata())
 	while(color_list[i]==(0,0,0)):
 		i=i+1
-	offset = get_offset(color_list[i])
-	print("Writing to binary file...")
-	hex_list=offset + ''.join([tuple2hex(pixel) for pixel in color_list[i+1:]])
+	color_list=color_list[i:]
+	hex_list=[tuple2hex(pixel) for pixel in color_list]
+	offset,rest=hex_list[0],hex_list[1:]
+	hex_list=hex(int(offset,16))[2:]+''.join(rest)
+	found_hash=hex_list[:64]
+	hex_list=hex_list[64:]
 	file_data=binascii.unhexlify(hex_list)
+	actual_hash=sha256(file_data).hexdigest()
+	if (found_hash==actual_hash):
+		print("Hash check succeeded.")
+		print("Writing to binary file...")
+	else:
+		print("Hash check failed.\nWriting to file ,Data might be corrupt")
 	dest_fp.write(file_data)
 	dest_fp.close
 	src_fp.close
