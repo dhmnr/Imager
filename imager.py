@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/env python3
 from PIL import Image
 from math import ceil,sqrt
 from hashlib import sha256
@@ -28,7 +28,7 @@ def tuple2hex(pixel):
 	hex_rgb=[('0'*(2-len(i)))+i for i in hex_rgb]
 	return ''.join(hex_rgb)
 	
-def encode(src_fp,dest_fp):
+def encode(src_fp,dest_fp,out):
 	print("Reading from file...")
 	file_data=src_fp.read()
 	sha256_hash=sha256(file_data).hexdigest()
@@ -43,8 +43,8 @@ def encode(src_fp,dest_fp):
 	try:
 		img.save(dest_fp)
 	except ValueError:
-		print("{} is not a valid filename. Defaulting to PNG.\nSupported formats are BMP,JPEG,JPG,PNG,TIFF".format(out))
-		fp2.close()
+		print("{} is not a valid filename. Defaulting to PNG.\nSupported formats are BMP,PNG,TIFF".format(out))
+		dest_fp.close()
 		fp2=open(out+'.png','wb')
 		img.save(dest_fp)
 	print("Done!")
@@ -90,7 +90,7 @@ def main(In,out,d):
 	if(d):
 		decode(fp1,fp2)
 	else:
-		encode(fp1,fp2)
+		encode(fp1,fp2,out)
 	
 if __name__=="__main__":
 	parser = argparse.ArgumentParser(description = "Encode any file to an image and decode .\n Supported Image formats are BMP,JPEG,JPG,PNG,TIFF")
